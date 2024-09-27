@@ -1,0 +1,137 @@
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+################### PYBIND11
+include(pybind11Tools)
+
+# kratos_add_dependency(${CMAKE_CURRENT_SOURCE_DIR}/../structural_application)
+
+include_directories( ${CMAKE_SOURCE_DIR}/kratos )
+#include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/.. )
+#include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../structural_application )
+
+#######################################################################
+
+#find version of git and throw
+execute_process(COMMAND git log --pretty=format:'%h' -n 1
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                OUTPUT_VARIABLE FOUR_C_APPLICATION_GIT_REV
+                ERROR_QUIET)
+message("FOUR_C_APPLICATION_GIT_REV: " ${FOUR_C_APPLICATION_GIT_REV})
+# Check whether we got any revision (which isn't
+# always the case, e.g. when someone downloaded a zip
+# file from Github instead of a checkout)
+if ("${FOUR_C_APPLICATION_GIT_REV}" STREQUAL "")
+    set(FOUR_C_APPLICATION_GIT_REV "N/A")
+    set(FOUR_C_APPLICATION_GIT_DIFF "")
+    set(FOUR_C_APPLICATION_GIT_TAG "N/A")
+    set(FOUR_C_APPLICATION_GIT_BRANCH "N/A")
+else()
+    execute_process(
+        COMMAND bash -c "git diff --quiet --exit-code || echo +"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE FOUR_C_APPLICATION_GIT_DIFF)
+    execute_process(
+        COMMAND git describe --exact-match --tags
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE FOUR_C_APPLICATION_GIT_TAG ERROR_QUIET)
+    execute_process(
+        COMMAND git rev-parse --abbrev-ref HEAD
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE FOUR_C_APPLICATION_GIT_BRANCH)
+
+    string(STRIP "${FOUR_C_APPLICATION_GIT_REV}" FOUR_C_APPLICATION_GIT_REV)
+    string(SUBSTRING "${FOUR_C_APPLICATION_GIT_REV}" 1 7 FOUR_C_APPLICATION_GIT_REV)
+    string(STRIP "${FOUR_C_APPLICATION_GIT_DIFF}" FOUR_C_APPLICATION_GIT_DIFF)
+    string(STRIP "${FOUR_C_APPLICATION_GIT_TAG}" FOUR_C_APPLICATION_GIT_TAG)
+    string(STRIP "${FOUR_C_APPLICATION_GIT_BRANCH}" FOUR_C_APPLICATION_GIT_BRANCH)
+endif()
+
+set(FOUR_C_APPLICATION_VERSION "#if !defined(KRATOS_FOUR_C_APPLICATION_VERSION_H_INCLUDED )
+#define  KRATOS_FOUR_C_APPLICATION_VERSION_H_INCLUDED
+
+namespace Kratos
+{
+const char* FOUR_C_APPLICATION_GIT_REV=\"${FOUR_C_APPLICATION_GIT_REV}${FOUR_C_APPLICATION_GIT_DIFF}\";
+const char* FOUR_C_APPLICATION_GIT_TAG=\"${FOUR_C_APPLICATION_GIT_TAG}\";
+const char* FOUR_C_APPLICATION_GIT_BRANCH=\"${FOUR_C_APPLICATION_GIT_BRANCH}\";
+}
+
+#endif // KRATOS_FOUR_C_APPLICATION_VERSION_H_INCLUDED")
+
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/version.h)
+    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/version.h FOUR_C_VERSION)
+else()
+    set(FOUR_C_VERSION "")
+endif()
+#message("FOUR_C VERSION:" "${FOUR_C_APPLICATION_VERSION}")
+if (NOT "${FOUR_C_APPLICATION_VERSION}" STREQUAL "${FOUR_C_VERSION}")
+    file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/version.h "${FOUR_C_APPLICATION_VERSION}")
+endif()
+
+#######################################################################
+
+add_definitions(-DSD_APP_FORWARD_COMPATIBILITY)
+
+set( KRATOS_FOUR_C_APPLICATION_CORE
+    # add core compilation units here
+    ${CMAKE_CURRENT_SOURCE_DIR}/four_c_application.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/four_c_application_variables.cpp
+)
+
+## FourC testing sources
+if(${KRATOS_BUILD_TESTING} MATCHES ON)
+    file(GLOB_RECURSE KRATOS_FOUR_C_APPLICATION_TESTING_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests_python3/*.cpp)
+endif(${KRATOS_BUILD_TESTING} MATCHES ON)
+
+## FourC python interface sources
+set(KRATOS_FOUR_C_APPLICATION_PYTHON_INTERFACE
+    # add Python interface compilation units here
+    ${CMAKE_CURRENT_SOURCE_DIR}/custom_python3/four_c_python_application.cpp
+)
+
+add_library(KratosFourCCore SHARED ${KRATOS_FOUR_C_APPLICATION_CORE} ${KRATOS_FOUR_C_APPLICATION_TESTING_SOURCES})
+target_link_libraries(KratosFourCCore PUBLIC KratosCore)
+set_target_properties(KratosFourCCore PROPERTIES COMPILE_DEFINITIONS "FOUR_C_APPLICATION=EXPORT,API")
+
+###############################################################
+## define library Kratos which defines the basic python interface
+pybind11_add_module(KratosFourCApplication MODULE THIN_LTO ${KRATOS_FOUR_C_APPLICATION_PYTHON_INTERFACE})
+target_link_libraries(KratosFourCApplication PRIVATE KratosFourCCore)
+set_target_properties(KratosFourCApplication PROPERTIES PREFIX "")
+
+# changing the .dll suffix to .pyd (Windows)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set_target_properties(KratosFourCApplication PROPERTIES SUFFIX .pyd)
+endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+
+# changing the .dylib suffix to .so (OS X)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set_target_properties(KratosFourCApplication PROPERTIES SUFFIX .so)
+endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+
+# # Cotire
+# if(USE_COTIRE MATCHES ON)
+#     cotire(KratosFourCCore)
+#     cotire(KratosFourCApplication)
+# endif(USE_COTIRE MATCHES ON)
+
+# Add to the KratosMultiphisics Python module
+kratos_python_install(${INSTALL_PYTHON_USING_LINKS} ${CMAKE_CURRENT_SOURCE_DIR}/FourCApplication3.py KratosMultiphysics/FourCApplication/__init__.py )
+
+# Install python files
+kratos_python_install_directory(${INSTALL_PYTHON_USING_LINKS} ${CMAKE_CURRENT_SOURCE_DIR}/python_scripts3 KratosMultiphysics/FourCApplication )
+
+# Kratos Testing. Install everything except sources to ensure that reference and configuration files are copied.
+if(${INSTALL_TESTING_FILES} MATCHES ON )
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests_python3 DESTINATION applications/FourCApplication
+        PATTERN "*.git" EXCLUDE
+        PATTERN "*.c" EXCLUDE
+        PATTERN "*.h" EXCLUDE
+        PATTERN "*.cpp" EXCLUDE
+        PATTERN "*.hpp" EXCLUDE
+  )
+endif(${INSTALL_TESTING_FILES} MATCHES ON)
+
+# Install targets
+install(TARGETS KratosFourCCore DESTINATION libs )
+install(TARGETS KratosFourCApplication DESTINATION libs )

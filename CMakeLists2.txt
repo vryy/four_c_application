@@ -1,0 +1,145 @@
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules")
+
+######### add include directory here
+if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Android")
+    include_directories( ${CMAKE_SOURCE_DIR}/kratos )
+    include_directories( ${CMAKE_SOURCE_DIR}/applications )
+endif()
+#######################################################################
+
+#find version of git and throw
+execute_process(COMMAND git log --pretty=format:'%h' -n 1
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                OUTPUT_VARIABLE FOUR_C_APPLICATION_GIT_REV
+                ERROR_QUIET)
+message("FOUR_C_APPLICATION_GIT_REV: " ${FOUR_C_APPLICATION_GIT_REV})
+# Check whether we got any revision (which isn't
+# always the case, e.g. when someone downloaded a zip
+# file from Github instead of a checkout)
+if ("${FOUR_C_APPLICATION_GIT_REV}" STREQUAL "")
+    set(FOUR_C_APPLICATION_GIT_REV "N/A")
+    set(FOUR_C_APPLICATION_GIT_DIFF "")
+    set(FOUR_C_APPLICATION_GIT_TAG "N/A")
+    set(FOUR_C_APPLICATION_GIT_BRANCH "N/A")
+else()
+    execute_process(
+        COMMAND bash -c "git diff --quiet --exit-code || echo +"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE FOUR_C_APPLICATION_GIT_DIFF)
+    execute_process(
+        COMMAND git describe --exact-match --tags
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE FOUR_C_APPLICATION_GIT_TAG ERROR_QUIET)
+    execute_process(
+        COMMAND git rev-parse --abbrev-ref HEAD
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE FOUR_C_APPLICATION_GIT_BRANCH)
+
+    string(STRIP "${FOUR_C_APPLICATION_GIT_REV}" FOUR_C_APPLICATION_GIT_REV)
+    string(SUBSTRING "${FOUR_C_APPLICATION_GIT_REV}" 1 7 FOUR_C_APPLICATION_GIT_REV)
+    string(STRIP "${FOUR_C_APPLICATION_GIT_DIFF}" FOUR_C_APPLICATION_GIT_DIFF)
+    string(STRIP "${FOUR_C_APPLICATION_GIT_TAG}" FOUR_C_APPLICATION_GIT_TAG)
+    string(STRIP "${FOUR_C_APPLICATION_GIT_BRANCH}" FOUR_C_APPLICATION_GIT_BRANCH)
+endif()
+
+set(FOUR_C_APPLICATION_VERSION "#if !defined(KRATOS_FOUR_C_APPLICATION_VERSION_H_INCLUDED )
+#define  KRATOS_FOUR_C_APPLICATION_VERSION_H_INCLUDED
+
+namespace Kratos
+{
+const char* FOUR_C_APPLICATION_GIT_REV=\"${FOUR_C_APPLICATION_GIT_REV}${FOUR_C_APPLICATION_GIT_DIFF}\";
+const char* FOUR_C_APPLICATION_GIT_TAG=\"${FOUR_C_APPLICATION_GIT_TAG}\";
+const char* FOUR_C_APPLICATION_GIT_BRANCH=\"${FOUR_C_APPLICATION_GIT_BRANCH}\";
+}
+
+#endif // KRATOS_FOUR_C_APPLICATION_VERSION_H_INCLUDED")
+
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/version.h)
+    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/version.h FOUR_C_VERSION)
+else()
+    set(FOUR_C_VERSION "")
+endif()
+#message("FOUR_C VERSION:" "${FOUR_C_APPLICATION_VERSION}")
+if (NOT "${FOUR_C_APPLICATION_VERSION}" STREQUAL "${FOUR_C_VERSION}")
+    file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/version.h "${FOUR_C_APPLICATION_VERSION}")
+endif()
+
+#######################################################################
+
+find_package(FourC REQUIRED)
+
+#######################################################################
+
+######### add compilation units here
+set( KRATOS_FOUR_C_APPLICATION_SOURCES
+    # main application compilation unit
+    ${CMAKE_CURRENT_SOURCE_DIR}/custom_interfaces/four_c_model.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/custom_interfaces/four_c_problem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/four_c_application.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/four_c_application_variables.cpp
+)
+#######################################################################
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Android")
+    ## define library Kratos
+    add_library(KratosFourCApplication SHARED ${KRATOS_FOUR_C_APPLICATION_SOURCES})
+    target_link_libraries(KratosFourCApplication KratosCore)
+    set_target_properties(KratosFourCApplication PROPERTIES PREFIX "")
+    #######################################################################
+else()
+    set( KRATOS_FOUR_C_APPLICATION_SOURCES
+        ${KRATOS_FOUR_C_APPLICATION_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/custom_python/add_four_c_model_to_python.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/custom_python/four_c_python_application.cpp
+    )
+
+    if(DEFINED TRILINOS_ROOT)
+        set(Trilinos_PREFIX ${TRILINOS_ROOT})
+        find_package(Trilinos REQUIRED)
+        if(Trilinos_FOUND)
+            include_directories(${Trilinos_INCLUDE_DIRS})
+            include_directories(${Trilinos_TPL_INCLUDE_DIRS})
+            message("-- FourCApplication uses TRILINOS_ROOT = " ${TRILINOS_ROOT})
+            message("-- FourCApplication uses Trilinos_INCLUDE_DIRS = " ${Trilinos_INCLUDE_DIRS})
+            message("-- FourCApplication uses Trilinos_LIBRARIES = " ${Trilinos_LIBRARIES})
+            # find_package(Boost COMPONENTS python system REQUIRED) #for some reason it's needed for Trilinos
+        endif()
+    else()
+        message(FATAL_ERROR "Trilinos is required to compile FourCApplication")
+    endif()
+
+    # message("FourCApplication uses MPI_LIBRARIES = " ${MPI_LIBRARIES})
+
+    ## define library Kratos which defines the basic python interface
+    add_library(KratosFourCApplication SHARED ${KRATOS_FOUR_C_APPLICATION_SOURCES})
+    target_link_libraries(KratosFourCApplication KratosCore)
+    if (FOUR_C_FOUND)
+        target_link_libraries(KratosFourCApplication ${FOUR_C_LIBRARIES})
+    endif()
+    if(Trilinos_FOUND)
+        target_link_libraries(KratosFourCApplication ${Trilinos_LIBRARIES})
+    endif()
+    target_link_libraries(KratosFourCApplication ${MPI_LIBRARIES})
+    set_target_properties(KratosFourCApplication PROPERTIES PREFIX "")
+    install(TARGETS KratosFourCApplication DESTINATION libs )
+    #######################################################################
+
+    ## changing the .dll suffix to .pyd for Windows compatibility
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        set_target_properties(KratosFourCApplication PROPERTIES SUFFIX .pyd)
+    endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    #######################################################################
+
+    ## install application's python script if required
+    if(${INSTALL_PYTHON_FILES} MATCHES ON)
+      get_filename_component (CURRENT_DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+      install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python_scripts DESTINATION applications/${CURRENT_DIR_NAME}  FILES_MATCHING PATTERN "*.py"  PATTERN ".svn" EXCLUDE)
+    endif(${INSTALL_PYTHON_FILES} MATCHES ON)
+    #######################################################################
+
+    ## Add to the KratosMultiphysics Python module
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/FourCApplication.py" DESTINATION KratosMultiphysics )
+    #######################################################################
+endif()
