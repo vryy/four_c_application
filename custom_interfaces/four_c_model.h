@@ -87,6 +87,10 @@ public:
     ///@name Operations
     ///@{
 
+    /*********************************/
+    /****** SETUP OPERATIONS *********/
+    /*********************************/
+
     /// Create a discretization with name
     void CreateDiscretization(const std::string& name);
 
@@ -100,11 +104,22 @@ public:
     void AddDiscretization(Teuchos::RCP<FourC::Core::FE::Discretization> pdisc);
 
     /// Fill complete the discretization
-    void FillCompleteDiscretization();
+    void FillComplete();
 
-    /// TODO
+    /*********************************/
+    /****** COMPUTE OPERATIONS *******/
+    /*********************************/
+
+    /// Set the (zero) state for discretization
+    void SetZeroState(const std::string& dis_name, const unsigned nds,
+            const std::string& state_name);
+
+    /// Set the state for discretization
+    void SetState(const std::string& dis_name, const unsigned nds,
+            const std::string& state_name, Teuchos::RCP<const Epetra_Vector> state);
+
+    /// Evaluate the discretization providing the parameter list
     void EvaluateSystem(Teuchos::ParameterList& params, const std::string& dis_name);
-    void EvaluateSystem(const std::string& dis_name);
 
     ///@}
     ///@name Access

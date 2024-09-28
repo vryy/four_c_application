@@ -51,18 +51,21 @@ void FourCModel::CreateNode(const std::string& dis_name, const IndexType id, con
 
 void FourCModel::CreateElement(const std::string& dis_name, const std::string& element_type, const IndexType id, const std::vector<IndexType>& nodes)
 {
+    const int rank = mpComm->MyPID();
+    auto pdisc = pGetDiscretization(dis_name);
+    if (pdisc->filled())
+        KRATOS_ERROR << "Discretization " << dis_name << " has been filled. No element can be added.";
+
+    Teuchos::RCP<FourC::Core::Elements::Element> p_element;
     if (element_type == "SOLID")
     {
-        const int rank = mpComm->MyPID();
-        auto p_element = Teuchos::rcp(new FourC::Discret::ELEMENTS::Solid(id, rank));
-        p_element->set_node_ids(nodes.size(), nodes.data());
-        auto pdisc = pGetDiscretization(dis_name);
-        if (pdisc->filled())
-            KRATOS_ERROR << "Discretization " << dis_name << " has been filled. No element can be added.";
-        pdisc->add_element(p_element);
+        p_element = Teuchos::rcp(new FourC::Discret::ELEMENTS::Solid(id, rank));
     }
     else
         KRATOS_ERROR << "Element type " << element_type << " is not supported";
+
+    p_element->set_node_ids(nodes.size(), nodes.data());
+        pdisc->add_element(p_element);
 }
 
 void FourCModel::AddDiscretization(Teuchos::RCP<FourC::Core::FE::Discretization> pdisc)
@@ -74,7 +77,7 @@ void FourCModel::AddDiscretization(Teuchos::RCP<FourC::Core::FE::Discretization>
     mDiscretizationData[pdisc->name()].disc = pdisc;
 }
 
-void FourCModel::FillCompleteDiscretization()
+void FourCModel::FillComplete()
 {
     for (auto it = mDiscretizationData.begin(); it != mDiscretizationData.end(); ++it)
     {
@@ -89,16 +92,25 @@ void FourCModel::FillCompleteDiscretization()
     }
 }
 
+void FourCModel::SetZeroState(const std::string& dis_name, const unsigned nds,
+        const std::string& state_name)
+{
+    auto pdisc = GetDiscretizationData(dis_name).disc;
+    auto zero_state = FourC::Core::LinAlg::create_vector(*pdisc->dof_row_map(), true);
+    pdisc->set_state(nds, state_name, zero_state);
+}
+
+void FourCModel::SetState(const std::string& dis_name, const unsigned nds,
+        const std::string& state_name, Teuchos::RCP<const Epetra_Vector> state)
+{
+    auto pdisc = GetDiscretizationData(dis_name).disc;
+    pdisc->set_state(nds, state_name, state);
+}
+
 void FourCModel::EvaluateSystem(Teuchos::ParameterList& params, const std::string& dis_name)
 {
     auto dt = GetDiscretizationData(dis_name);
     dt.disc->evaluate(params, dt.mat1, Teuchos::null, dt.vec1, Teuchos::null, Teuchos::null);
-}
-
-void FourCModel::EvaluateSystem(const std::string& dis_name)
-{
-    Teuchos::ParameterList p; // TODO fill the parameter list
-    EvaluateSystem(p, dis_name);
 }
 
 } // namespace Kratos

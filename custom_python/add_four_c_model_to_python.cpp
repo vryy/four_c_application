@@ -50,6 +50,8 @@ void FourCModel_CreateElement(FourCModel& rDummy, const std::string& dis_name, c
     rDummy.CreateElement(dis_name, element_type, id, nodes);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 static FourCProblem::Pointer FourCProblem_init(const boost::python::list& arguments)
 {
     int argc = 0;
@@ -66,9 +68,22 @@ static FourCProblem::Pointer FourCProblem_init(const boost::python::list& argume
     return FourCProblem::Pointer(new FourCProblem(argc, argv.data()));
 }
 
+boost::python::list FourCProblem_GetDiscretizationNames(FourCProblem& rDummy)
+{
+    boost::python::list a;
+    auto names = rDummy.GetDiscretizationNames();
+    for (auto it = names.begin(); it != names.end(); ++it)
+        a.append(*it);
+    return std::move(a);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 void FourCApplication_AddFourCModelToPython()
 {
     namespace bp = boost::python;
+
+    void(FourCModel::*pointer_to_EvaluateSystem)(Teuchos::ParameterList&, const std::string&) = &FourCModel::EvaluateSystem;
 
     bp::class_<FourCModel, FourCModel::Pointer, boost::noncopyable>
     ("FourCModel", bp::no_init)
@@ -76,8 +91,9 @@ void FourCApplication_AddFourCModelToPython()
     .def("CreateDiscretization", &FourCModel::CreateDiscretization)
     .def("CreateNode", &FourCModel::CreateNode)
     .def("CreateElement", &FourCModel_CreateElement)
-    .def("FillCompleteDiscretization", &FourCModel::FillCompleteDiscretization)
-    // .def("EvaluateSystem", &FourCModel::EvaluateSystem)
+    .def("FillComplete", &FourCModel::FillComplete)
+    .def("SetZeroState", &FourCModel::SetZeroState)
+    .def("EvaluateSystem", pointer_to_EvaluateSystem)
     .def(bp::self_ns::str(bp::self))
     ;
 
@@ -88,6 +104,8 @@ void FourCApplication_AddFourCModelToPython()
     .def("__init__", bp::make_constructor(&FourCProblem_init))
     .def("ReadInputFile", &FourCProblem::ReadInputFile)
     .def("GetModel", pointer_to_pGetModel)
+    .def("GetDiscretizationNames", &FourCProblem_GetDiscretizationNames)
+    .def("Run", &FourCProblem::Run)
     .def(bp::self_ns::str(bp::self))
     ;
 }

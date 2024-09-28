@@ -78,9 +78,14 @@ public:
     void ReadInputFile(const std::string& inputfile_name,
             const std::string& outputfile_kenner, const std::string& restartfile_kenner);
 
+    /// Run the analysis defined in input file
+    void Run();
+
     ///@}
     ///@name Access
     ///@{
+
+    std::vector<std::string> GetDiscretizationNames() const;
 
     FourCModel::ConstPointer pGetModel() const {return mpModel;}
 
