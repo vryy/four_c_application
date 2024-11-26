@@ -59,13 +59,13 @@ public:
 
     struct disc_data_t
     {
-        Teuchos::RCP<FourC::Core::FE::Discretization> disc;
+        std::shared_ptr<FourC::Core::FE::Discretization> disc;
 
-        Teuchos::RCP<FourC::Core::LinAlg::SparseOperator> mat1;
-        Teuchos::RCP<FourC::Core::LinAlg::SparseOperator> mat2;
-        Teuchos::RCP<Epetra_Vector> vec1;
-        Teuchos::RCP<Epetra_Vector> vec2;
-        Teuchos::RCP<Epetra_Vector> vec3;
+        std::shared_ptr<FourC::Core::LinAlg::SparseOperator> mat1;
+        std::shared_ptr<FourC::Core::LinAlg::SparseOperator> mat2;
+        std::shared_ptr<FourC::Core::LinAlg::Vector<double> > vec1;
+        std::shared_ptr<FourC::Core::LinAlg::Vector<double> > vec2;
+        std::shared_ptr<FourC::Core::LinAlg::Vector<double> > vec3;
 
     };
 
@@ -101,7 +101,7 @@ public:
     void CreateElement(const std::string& dis_name, const std::string& element_type, const IndexType id, const std::vector<IndexType>& nodes);
 
     /// Add the discretization to the model
-    void AddDiscretization(Teuchos::RCP<FourC::Core::FE::Discretization> pdisc);
+    void AddDiscretization(std::shared_ptr<FourC::Core::FE::Discretization> pdisc);
 
     /// Fill complete the discretization
     void FillComplete();
@@ -116,7 +116,7 @@ public:
 
     /// Set the state for discretization
     void SetState(const std::string& dis_name, const unsigned nds,
-            const std::string& state_name, Teuchos::RCP<const Epetra_Vector> state);
+            const std::string& state_name, std::shared_ptr<const FourC::Core::LinAlg::Vector<double> > state);
 
     /// Evaluate the discretization providing the parameter list
     void EvaluateSystem(Teuchos::ParameterList& params, const std::string& dis_name);
@@ -126,7 +126,7 @@ public:
     ///@{
 
     /// Access the discretization (public)
-    Teuchos::RCP<const FourC::Core::FE::Discretization> pGetDiscretization(const std::string& dis_name) const
+    std::shared_ptr<const FourC::Core::FE::Discretization> pGetDiscretization(const std::string& dis_name) const
     {
         return GetDiscretizationData(dis_name).disc;
     }
@@ -188,7 +188,7 @@ protected:
     ///@{
 
     /// Access the discretization (protected)
-    Teuchos::RCP<FourC::Core::FE::Discretization> pGetDiscretization(const std::string& dis_name)
+    std::shared_ptr<FourC::Core::FE::Discretization> pGetDiscretization(const std::string& dis_name)
     {
         return GetDiscretizationData(dis_name).disc;
     }
@@ -228,7 +228,7 @@ private:
     ///@{
 
     int mDimension;
-    Teuchos::RCP<Epetra_Comm> mpComm;
+    std::shared_ptr<Epetra_Comm> mpComm;
     std::unordered_map<std::string, disc_data_t> mDiscretizationData;
 
     ///@}

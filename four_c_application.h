@@ -72,7 +72,7 @@ namespace Kratos
 /**
  * Application provides access to 4C interface
  */
-class KratosFourCApplication : public KratosApplication
+class KRATOS_API(FOUR_C_APPLICATION) KratosFourCApplication : public KratosApplication
 {
 public:
     ///@name Type Definitions

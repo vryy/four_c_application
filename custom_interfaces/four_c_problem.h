@@ -169,7 +169,7 @@ private:
     ///@name Private Operations
     ///@{
 
-    void setup_parallel_output(const std::string& outputfile_kenner, Teuchos::RCP<Epetra_Comm> lcomm, int group);
+    void setup_parallel_output(const std::string& outputfile_kenner, std::shared_ptr<Epetra_Comm> lcomm, int group);
 
     ///@}
     ///@name Private  Access

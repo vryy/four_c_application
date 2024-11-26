@@ -17,9 +17,10 @@ LICENSE: see four_c_application/LICENSE.txt
 #include "4C_global_data.hpp"
 #include "4C_global_data_read.hpp"
 #include "4C_global_legacy_module.hpp"
-#include "4C_io_inputreader.hpp"
+#include "4C_io_input_file.hpp"
 #include "4C_io_pstream.hpp"
 #include "4C_utils_parameter_list.hpp"
+#include "4C_utils_singleton_owner.hpp"
 
 #include "4C_ale_dyn.hpp"
 #include "4C_art_net_dyn_drt.hpp"
@@ -64,16 +65,17 @@ namespace Kratos
 
 FourCProblem::FourCProblem(int argc, char** argv)
 {
+    FourC::Core::Utils::SingletonOwnerRegistry::initialize();
     // MPI_Init(&argc, &argv); // this is called outside by Kratos
     Kokkos::ScopeGuard kokkos_guard(argc, argv); // DO NOT KNOW WHAT IS THIS
 
     using namespace FourC;
 
-    Teuchos::RCP<Core::Communication::Communicators> communicators =
+    std::shared_ptr<Core::Communication::Communicators> communicators =
         Core::Communication::create_comm(std::vector<std::string>(argv, argv + argc));
     Global::Problem::instance()->set_communicators(communicators);
-    // Teuchos::RCP<Epetra_Comm> lcomm = communicators->local_comm();
-    // Teuchos::RCP<Epetra_Comm> gcomm = communicators->global_comm();
+    // std::shared_ptr<Epetra_Comm> lcomm = communicators->local_comm();
+    // std::shared_ptr<Epetra_Comm> gcomm = communicators->global_comm();
     // int ngroups = communicators->num_groups();
 
     ///
@@ -82,6 +84,8 @@ FourCProblem::FourCProblem(int argc, char** argv)
 
 FourCProblem::~FourCProblem()
 {
+    FourC::Core::Utils::SingletonOwnerRegistry::finalize();
+    FourC::Global::Problem::done();
     // MPI_Finalize(); // this is called outside by Kratos
 }
 
@@ -106,20 +110,20 @@ void FourCProblem::PrintData(std::ostream& rOStream) const
 void FourCProblem::ReadInputFile(const std::string& inputfile_name,
         const std::string& outputfile_kenner, const std::string& restartfile_kenner)
 {
-    /**************** 4C setup part *****************/
-    /** This part is copied from                   **/
-    /**   4C/apps/global_full/4C_global_full_main  **/
-    /** Please keep track of possible changes      **/
-    /************************************************/
+    /**************** 4C setup part ****************************/
+    /** This function is adapted from                         **/
+    /**   4C/apps/global_full/4C_global_full_inp_control.cpp  **/
+    /** Please keep track of possible changes                 **/
+    /***********************************************************/
     using namespace FourC;
 
-    Teuchos::RCP<Epetra_Comm> lcomm = mpProblem->get_communicators()->local_comm();
-    Teuchos::RCP<Epetra_Comm> gcomm = mpProblem->get_communicators()->global_comm();
+    std::shared_ptr<Epetra_Comm> lcomm = mpProblem->get_communicators()->local_comm();
+    std::shared_ptr<Epetra_Comm> gcomm = mpProblem->get_communicators()->global_comm();
     int group = mpProblem->get_communicators()->group_id();
     Core::Communication::NestedParallelismType npType = mpProblem->get_communicators()->np_type();
 
     // and now the actual reading
-    Core::IO::DatFileReader reader(inputfile_name, lcomm);
+    Core::IO::InputFile reader(inputfile_name, *lcomm);
 
     Global::read_parameter(*mpProblem, reader);
 
@@ -138,7 +142,7 @@ void FourCProblem::ReadInputFile(const std::string& inputfile_name,
     Global::read_cloning_material_map(*mpProblem, reader);
 
     {
-        Core::UTILS::FunctionManager function_manager;
+        Core::Utils::FunctionManager function_manager;
         global_legacy_module_callbacks().AttachFunctionDefinitions(function_manager);
         function_manager.read_input(reader);
         mpProblem->set_function_manager(std::move(function_manager));
@@ -175,13 +179,16 @@ void FourCProblem::ReadInputFile(const std::string& inputfile_name,
     if (lcomm->MyPID() == 0) mpProblem->write_input_parameters();
 
     // before we destroy the reader we want to know about unused sections
-    reader.print_unknown_sections();
+    const bool all_ok = !reader.print_unknown_sections(std::cout);
+
+    if(!all_ok)
+        KRATOS_ERROR << "Unknown sections detected. Correct this! Find hints on these unknown sections above.";
 
     /*******************************************************************/
     /**************** interface part: create the model *****************/
     /*******************************************************************/
-    Teuchos::RCP<Epetra_MpiComm> mpicomm = Teuchos::rcp_dynamic_cast<Epetra_MpiComm>(gcomm);
-    if (mpicomm == Teuchos::null)
+    std::shared_ptr<Epetra_MpiComm> mpicomm = std::dynamic_pointer_cast<Epetra_MpiComm>(gcomm);
+    if (mpicomm == nullptr)
         KRATOS_ERROR << "gcomm is not Epetra_MpiComm";
     mpModel = FourCModel::Pointer(new FourCModel(mpicomm->Comm(), mpProblem->n_dim()));
 
@@ -194,7 +201,7 @@ void FourCProblem::ReadInputFile(const std::string& inputfile_name,
     }
 }  // end of ntainp_ccadiscret()
 
-void FourCProblem::setup_parallel_output(const std::string& outputfile_kenner, Teuchos::RCP<Epetra_Comm> lcomm, int group)
+void FourCProblem::setup_parallel_output(const std::string& outputfile_kenner, std::shared_ptr<Epetra_Comm> lcomm, int group)
 {
     using namespace FourC;
 

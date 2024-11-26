@@ -68,7 +68,19 @@ endif()
 
 #######################################################################
 
-find_package(FourC REQUIRED)
+if(DEFINED FOUR_C_PREFIX_PATH)
+    set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH} ${FOUR_C_PREFIX_PATH}")
+elseif(DEFINED FOUR_C_PREFIX)
+    set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH} ${FOUR_C_PREFIX}")
+elseif(DEFINED 4C_PREFIX_PATH)
+    set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH} ${4C_PREFIX_PATH}")
+elseif(DEFINED 4C_PREFIX)
+    set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH} ${4C_PREFIX}")
+else()
+    message(FATAL_ERROR "4C prefix path is not defined")
+endif()
+
+find_package(4C CONFIG REQUIRED)
 
 #######################################################################
 
@@ -95,33 +107,13 @@ else()
         ${CMAKE_CURRENT_SOURCE_DIR}/custom_python/four_c_python_application.cpp
     )
 
-    if(DEFINED TRILINOS_ROOT)
-        set(Trilinos_PREFIX ${TRILINOS_ROOT})
-        find_package(Trilinos REQUIRED)
-        if(Trilinos_FOUND)
-            include_directories(${Trilinos_INCLUDE_DIRS})
-            include_directories(${Trilinos_TPL_INCLUDE_DIRS})
-            message("-- FourCApplication uses TRILINOS_ROOT = " ${TRILINOS_ROOT})
-            message("-- FourCApplication uses Trilinos_INCLUDE_DIRS = " ${Trilinos_INCLUDE_DIRS})
-            message("-- FourCApplication uses Trilinos_LIBRARIES = " ${Trilinos_LIBRARIES})
-            # find_package(Boost COMPONENTS python system REQUIRED) #for some reason it's needed for Trilinos
-        endif()
-    else()
-        message(FATAL_ERROR "Trilinos is required to compile FourCApplication")
-    endif()
-
-    # message("FourCApplication uses MPI_LIBRARIES = " ${MPI_LIBRARIES})
-
     ## define library Kratos which defines the basic python interface
     add_library(KratosFourCApplication SHARED ${KRATOS_FOUR_C_APPLICATION_SOURCES})
-    target_link_libraries(KratosFourCApplication KratosCore)
-    if (FOUR_C_FOUND)
-        target_link_libraries(KratosFourCApplication ${FOUR_C_LIBRARIES})
-    endif()
-    if(Trilinos_FOUND)
-        target_link_libraries(KratosFourCApplication ${Trilinos_LIBRARIES})
-    endif()
-    target_link_libraries(KratosFourCApplication ${MPI_LIBRARIES})
+    target_link_libraries(KratosFourCApplication PUBLIC KratosCore
+                                                 PRIVATE 4C::lib4C
+                                                 INTERFACE 4C::four_c_all_enabled_external_dependencies
+    )
+    set_target_properties(KratosFourCApplication PROPERTIES COMPILE_DEFINITIONS "FOUR_C_APPLICATION=EXPORT,API")
     set_target_properties(KratosFourCApplication PROPERTIES PREFIX "")
     install(TARGETS KratosFourCApplication DESTINATION libs )
     #######################################################################
