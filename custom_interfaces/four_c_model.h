@@ -77,7 +77,7 @@ public:
     FourCModel(const MPI_Comm& comm, const int dim);
 
     /// Destructor.
-    virtual ~FourCModel() {}
+    virtual ~FourCModel();
 
     ///@}
     ///@name Operators
@@ -228,7 +228,7 @@ private:
     ///@{
 
     int mDimension;
-    std::shared_ptr<Epetra_Comm> mpComm;
+    MPI_Comm mComm;
     std::unordered_map<std::string, disc_data_t> mDiscretizationData;
 
     ///@}

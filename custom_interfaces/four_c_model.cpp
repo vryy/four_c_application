@@ -25,10 +25,11 @@ namespace Kratos
 {
 
 FourCModel::FourCModel(const MPI_Comm& comm, const int dim)
-: mDimension(dim)
-{
-    mpComm = std::make_shared<Epetra_MpiComm>(comm);
-}
+: mDimension(dim), mComm(comm)
+{}
+
+FourCModel::~FourCModel()
+{}
 
 void FourCModel::CreateDiscretization(const std::string& name)
 {
@@ -36,12 +37,12 @@ void FourCModel::CreateDiscretization(const std::string& name)
     if (it != mDiscretizationData.end())
         KRATOS_ERROR << "4C Discretization " << name << " existed";
 
-    mDiscretizationData[name].disc = std::make_shared<FourC::Core::FE::Discretization>(name, mpComm, mDimension);
+    mDiscretizationData[name].disc = std::make_shared<FourC::Core::FE::Discretization>(name, mComm, mDimension);
 }
 
 void FourCModel::CreateNode(const std::string& dis_name, const IndexType id, const double x, const double y, const double z)
 {
-    const int rank = mpComm->MyPID();
+    const int rank = FourC::Core::Communication::my_mpi_rank(mComm);
     const auto p_node = std::make_shared<FourC::Core::Nodes::Node>(id, std::vector<double>{x, y, z}, rank);
     auto pdisc = pGetDiscretization(dis_name);
     if (pdisc->filled())
@@ -51,7 +52,7 @@ void FourCModel::CreateNode(const std::string& dis_name, const IndexType id, con
 
 void FourCModel::CreateElement(const std::string& dis_name, const std::string& element_type, const IndexType id, const std::vector<IndexType>& nodes)
 {
-    const int rank = mpComm->MyPID();
+    const int rank = FourC::Core::Communication::my_mpi_rank(mComm);
     auto pdisc = pGetDiscretization(dis_name);
     if (pdisc->filled())
         KRATOS_ERROR << "Discretization " << dis_name << " has been filled. No element can be added.";
@@ -97,14 +98,14 @@ void FourCModel::SetZeroState(const std::string& dis_name, const unsigned nds,
 {
     auto pdisc = GetDiscretizationData(dis_name).disc;
     auto zero_state = FourC::Core::LinAlg::create_vector(*pdisc->dof_row_map(), true);
-    pdisc->set_state(nds, state_name, zero_state);
+    pdisc->set_state(nds, state_name, *zero_state);
 }
 
 void FourCModel::SetState(const std::string& dis_name, const unsigned nds,
         const std::string& state_name, std::shared_ptr<const FourC::Core::LinAlg::Vector<double> > state)
 {
     auto pdisc = GetDiscretizationData(dis_name).disc;
-    pdisc->set_state(nds, state_name, state);
+    pdisc->set_state(nds, state_name, *state);
 }
 
 void FourCModel::EvaluateSystem(Teuchos::ParameterList& params, const std::string& dis_name)

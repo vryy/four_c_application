@@ -15,6 +15,7 @@ LICENSE: see four_c_application/LICENSE.txt
 // System includes
 
 // External includes
+#include "4C_comm_utils.hpp"
 #include "4C_global_data.hpp"
 
 // Project includes
@@ -44,7 +45,7 @@ namespace Kratos
 ///@{
 
 /**
- * Wrapper around 4C GlobalProblem to invoke 4C operations
+ * Wrapper around 4C GlobalProblem to invoke 4C analysis
  */
 class FourCProblem
 {
@@ -55,6 +56,20 @@ public:
     KRATOS_CLASS_POINTER_DEFINITION(FourCProblem);
 
     typedef int IndexType;
+
+    /**
+     * Gather some arguments from the command line and store them in a struct. This should be
+     * changed to a proper parser
+     */
+    struct CommandlineArguments
+    {
+      std::string input_file_name;
+      std::string output_file_identifier;
+      std::string restart_file_identifier;
+      int restart_step = 0;
+
+      std::shared_ptr<FourC::Core::Communication::Communicators> comms;
+    };
 
     ///@}
     ///@name Life Cycle
@@ -73,10 +88,6 @@ public:
     ///@}
     ///@name Operations
     ///@{
-
-    /// Read the input file. It is the same (copy) of ntainp_ccadiscret
-    void ReadInputFile(const std::string& inputfile_name,
-            const std::string& outputfile_kenner, const std::string& restartfile_kenner);
 
     /// Run the analysis defined in input file
     void Run();
@@ -160,6 +171,7 @@ private:
 
     FourC::Global::Problem* mpProblem;
     FourCModel::Pointer mpModel;
+    CommandlineArguments mArguments;
 
     ///@}
     ///@name Private Operators
@@ -169,7 +181,25 @@ private:
     ///@name Private Operations
     ///@{
 
-    void setup_parallel_output(const std::string& outputfile_kenner, std::shared_ptr<Epetra_Comm> lcomm, int group);
+    void setup_parallel_output(const CommandlineArguments& arguments);
+
+    void setup_global_problem(FourC::Core::IO::InputFile& input_file, const CommandlineArguments& arguments);
+
+    void entrypoint_switch();
+
+    std::vector<std::string> parse_input_output_files(int argc, char** argv, int my_rank) const;
+
+    void parse_commandline_arguments(int argc, char** argv, CommandlineArguments& arguments) const;
+
+    void parse_restart_definition(const std::vector<std::string>& inout, const int in_out_args,
+            std::string& restart_file_identifier, const std::string& outfile_identifier,
+            const int restart_group, CommandlineArguments& arguments) const;
+
+    double walltime_in_seconds() const;
+
+    void print_help_message() const;
+
+    void run(const CommandlineArguments& arguments);
 
     ///@}
     ///@name Private  Access

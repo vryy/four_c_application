@@ -29,19 +29,9 @@ LICENSE: see four_c_application/LICENSE.txt
 namespace Kratos
 {
 
-#ifdef SD_APP_FORWARD_COMPATIBILITY
-
 // Variables definition
 /* KRATOS_DEFINE_APPLICATION_VARIABLE(FOUR_C_APPLICATION, double, VARIABLE_NAME) */ // Example declaring scalar varibles
 /* KRATOS_DEFINE_3D_APPLICATION_VARIABLE_WITH_COMPONENTS(FOUR_C_APPLICATION, VARIABLE_NAME) */ // Example declaring 3D varibles
-
-#else // SD_APP_FORWARD_COMPATIBILITY
-
-// Variables definition
-/* KRATOS_DEFINE_VARIABLE(double, VARIABLE_NAME) */ // Example declaring scalar varibles
-/* KRATOS_DEFINE_3D_VARIABLE_WITH_COMPONENTS(VARIABLE_NAME) */ // Example declaring 3D varibles
-
-#endif
 
 } // namespace Kratos
 

@@ -55,6 +55,7 @@ void FourCModel_CreateElement(FourCModel& rDummy, const std::string& dis_name, c
 static FourCProblem::Pointer FourCProblem_init(const boost::python::list& arguments)
 {
     int argc = 0;
+    std::vector<std::string> args;
     std::vector<char*> argv;
 
     typedef boost::python::stl_input_iterator<std::string> iterator_value_type;
@@ -62,7 +63,8 @@ static FourCProblem::Pointer FourCProblem_init(const boost::python::list& argume
         std::make_pair(iterator_value_type(arguments), iterator_value_type() ) )
     {
         ++argc;
-        argv.push_back(const_cast<char*>(str.c_str()));
+        args.push_back(str);
+        argv.push_back(const_cast<char*>(args.back().c_str()));
     }
 
     return FourCProblem::Pointer(new FourCProblem(argc, argv.data()));
@@ -102,7 +104,6 @@ void FourCApplication_AddFourCModelToPython()
     bp::class_<FourCProblem, FourCProblem::Pointer, boost::noncopyable>
     ("FourCProblem", bp::no_init)
     .def("__init__", bp::make_constructor(&FourCProblem_init))
-    .def("ReadInputFile", &FourCProblem::ReadInputFile)
     .def("GetModel", pointer_to_pGetModel)
     .def("GetDiscretizationNames", &FourCProblem_GetDiscretizationNames)
     .def("Run", &FourCProblem::Run)

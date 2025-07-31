@@ -89,7 +89,7 @@ public:
     KratosFourCApplication();
 
     /// Destructor.
-    ~KratosFourCApplication() override {}
+    ~KratosFourCApplication() override;
 
     ///@}
     ///@name Operators

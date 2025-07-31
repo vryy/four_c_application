@@ -14,6 +14,7 @@ LICENSE: see four_c_application/LICENSE.txt
 // System includes
 
 // External includes
+#include "4C_utils_singleton_owner.hpp"
 
 // Project includes
 #include "version.h"
@@ -107,7 +108,18 @@ KratosFourCApplication::KratosFourCApplication()
 #endif
       // , FOUR_C_APP_CREATE_ELEMENT_ALL_GEOMETRIES( ElementType ) // Example creating elements for all geometries
       // , FOUR_C_APP_CREATE_CONDITION_ALL_GEOMETRIES( ConditionType ) // Example creating conditions for all geometries
-{}
+{
+    FourC::Core::Utils::SingletonOwnerRegistry::initialize();
+    // here we manually initialize and finalize the SingletonOwnerRegistry
+    // instead of using SingletonOwnerRegistry::ScopeGuard as in 4C.
+    // Using that's only applicable if everything is called within a main() function
+}
+
+KratosFourCApplication::~KratosFourCApplication()
+{
+    FourC::Core::Utils::SingletonOwnerRegistry::finalize();
+    std::cout << "KratosFourCApplication is unloaded" << std::endl;
+}
 
 void KratosFourCApplication::Register()
 {
