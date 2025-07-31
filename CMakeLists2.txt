@@ -1,7 +1,5 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules")
-
 ######### add include directory here
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Android")
     include_directories( ${CMAKE_SOURCE_DIR}/kratos )
@@ -76,11 +74,13 @@ elseif(DEFINED 4C_PREFIX_PATH)
     set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH} ${4C_PREFIX_PATH}")
 elseif(DEFINED 4C_PREFIX)
     set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH} ${4C_PREFIX}")
+elseif(DEFINED 4C_DIR)
+    # DO NOTHING, cmake will automatically look for 4C if 4C_DIR points to 4CConfig.cmake
 else()
     message(FATAL_ERROR "4C prefix path is not defined")
 endif()
 
-find_package(4C CONFIG REQUIRED)
+find_package(4C CONFIG REQUIRED NO_DEFAULT_PATH)
 
 #######################################################################
 
@@ -109,11 +109,12 @@ else()
 
     ## define library Kratos which defines the basic python interface
     add_library(KratosFourCApplication SHARED ${KRATOS_FOUR_C_APPLICATION_SOURCES})
+    set_target_properties(KratosFourCApplication PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED YES)
     target_link_libraries(KratosFourCApplication PUBLIC KratosCore
                                                  PRIVATE 4C::lib4C
                                                  INTERFACE 4C::four_c_all_enabled_external_dependencies
     )
-    set_target_properties(KratosFourCApplication PROPERTIES COMPILE_DEFINITIONS "FOUR_C_APPLICATION=EXPORT,API")
+    set_target_properties(KratosFourCApplication PROPERTIES COMPILE_DEFINITIONS "KRATOS_CORE=IMPORT;FOUR_C_APPLICATION=EXPORT;")
     set_target_properties(KratosFourCApplication PROPERTIES PREFIX "")
     install(TARGETS KratosFourCApplication DESTINATION libs )
     #######################################################################
