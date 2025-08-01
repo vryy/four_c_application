@@ -66,7 +66,6 @@ public:
         std::shared_ptr<FourC::Core::LinAlg::Vector<double> > vec1;
         std::shared_ptr<FourC::Core::LinAlg::Vector<double> > vec2;
         std::shared_ptr<FourC::Core::LinAlg::Vector<double> > vec3;
-
     };
 
     ///@}
@@ -119,7 +118,7 @@ public:
             const std::string& state_name, std::shared_ptr<const FourC::Core::LinAlg::Vector<double> > state);
 
     /// Evaluate the discretization providing the parameter list
-    void EvaluateSystem(Teuchos::ParameterList& params, const std::string& dis_name);
+    void Evaluate(Teuchos::ParameterList& params, const std::string& dis_name);
 
     ///@}
     ///@name Access

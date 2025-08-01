@@ -85,7 +85,7 @@ void FourCApplication_AddFourCModelToPython()
 {
     namespace bp = boost::python;
 
-    void(FourCModel::*pointer_to_EvaluateSystem)(Teuchos::ParameterList&, const std::string&) = &FourCModel::EvaluateSystem;
+    void(FourCModel::*pointer_to_Evaluate)(Teuchos::ParameterList&, const std::string&) = &FourCModel::Evaluate;
 
     bp::class_<FourCModel, FourCModel::Pointer, boost::noncopyable>
     ("FourCModel", bp::no_init)
@@ -95,7 +95,7 @@ void FourCApplication_AddFourCModelToPython()
     .def("CreateElement", &FourCModel_CreateElement)
     .def("FillComplete", &FourCModel::FillComplete)
     .def("SetZeroState", &FourCModel::SetZeroState)
-    .def("EvaluateSystem", pointer_to_EvaluateSystem)
+    .def("Evaluate", pointer_to_Evaluate)
     .def(bp::self_ns::str(bp::self))
     ;
 

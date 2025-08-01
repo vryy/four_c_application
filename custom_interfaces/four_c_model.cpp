@@ -108,10 +108,10 @@ void FourCModel::SetState(const std::string& dis_name, const unsigned nds,
     pdisc->set_state(nds, state_name, *state);
 }
 
-void FourCModel::EvaluateSystem(Teuchos::ParameterList& params, const std::string& dis_name)
+void FourCModel::Evaluate(Teuchos::ParameterList& params, const std::string& dis_name)
 {
     auto dt = GetDiscretizationData(dis_name);
-    dt.disc->evaluate(params, dt.mat1, nullptr, dt.vec1, nullptr, nullptr);
+    dt.disc->evaluate(params, dt.mat1, dt.mat2, dt.vec1, dt.vec2, dt.vec3);
 }
 
 } // namespace Kratos
