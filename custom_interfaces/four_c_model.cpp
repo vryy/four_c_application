@@ -43,11 +43,13 @@ void FourCModel::CreateDiscretization(const std::string& name)
 void FourCModel::CreateNode(const std::string& dis_name, const IndexType id, const double x, const double y, const double z)
 {
     const int rank = FourC::Core::Communication::my_mpi_rank(mComm);
-    const auto p_node = std::make_shared<FourC::Core::Nodes::Node>(id, std::vector<double>{x, y, z}, rank);
+    std::vector<double> coords = {x, y, z};
+    const auto p_node = std::make_shared<FourC::Core::Nodes::Node>(id, coords, rank);
     auto pdisc = pGetDiscretization(dis_name);
     if (pdisc->filled())
         KRATOS_ERROR << "Discretization " << dis_name << " has been filled. No node can be added.";
-    pdisc->add_node(p_node);
+    std::span<const double, 3> xv(coords.data(), 3);
+    pdisc->add_node(xv, id, p_node);
 }
 
 void FourCModel::CreateElement(const std::string& dis_name, const std::string& element_type, const IndexType id, const std::vector<IndexType>& nodes)

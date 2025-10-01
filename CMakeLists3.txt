@@ -1,15 +1,6 @@
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-################### PYBIND11
+message("PYTHON_EXECUTABLE: " ${PYTHON_EXECUTABLE})
+find_package(pybind11 REQUIRED)
 include(pybind11Tools)
-
-# kratos_add_dependency(${CMAKE_CURRENT_SOURCE_DIR}/../structural_application)
-
-include_directories( ${CMAKE_SOURCE_DIR}/kratos )
-#include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/.. )
-#include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../structural_application )
-
-#######################################################################
 
 #find version of git and throw
 execute_process(COMMAND git log --pretty=format:'%h' -n 1
@@ -70,68 +61,78 @@ endif()
 
 #######################################################################
 
-add_definitions(-DSD_APP_FORWARD_COMPATIBILITY)
+if(DEFINED FOUR_C_PREFIX_PATH)
+    set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH} ${FOUR_C_PREFIX_PATH}")
+elseif(DEFINED FOUR_C_PREFIX)
+    set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH} ${FOUR_C_PREFIX}")
+elseif(DEFINED 4C_PREFIX_PATH)
+    set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH} ${4C_PREFIX_PATH}")
+elseif(DEFINED 4C_PREFIX)
+    set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH} ${4C_PREFIX}")
+elseif(DEFINED 4C_DIR)
+    # DO NOTHING, cmake will automatically look for 4C if 4C_DIR points to 4CConfig.cmake
+else()
+    message(FATAL_ERROR "4C prefix path is not defined")
+endif()
 
-set( KRATOS_FOUR_C_APPLICATION_CORE
-    # add core compilation units here
+# message("CMAKE_PREFIX_PATH: " ${CMAKE_PREFIX_PATH})
+
+find_package(4C CONFIG REQUIRED NO_DEFAULT_PATH)
+
+#######################################################################
+
+######### add compilation units here
+set( KRATOS_FOUR_C_APPLICATION_SOURCES
+    # main application compilation unit
+    ${CMAKE_CURRENT_SOURCE_DIR}/custom_interfaces/four_c_model.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/custom_interfaces/four_c_problem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/four_c_application.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/four_c_application_variables.cpp
 )
+#######################################################################
 
-## FourC testing sources
-if(${KRATOS_BUILD_TESTING} MATCHES ON)
-    file(GLOB_RECURSE KRATOS_FOUR_C_APPLICATION_TESTING_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests_python3/*.cpp)
-endif(${KRATOS_BUILD_TESTING} MATCHES ON)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Android")
+    ## define library Kratos
+    add_library(KratosFourCApplication SHARED ${KRATOS_FOUR_C_APPLICATION_SOURCES})
+    target_link_libraries(KratosFourCApplication KratosCore)
+    set_target_properties(KratosFourCApplication PROPERTIES PREFIX "")
+    #######################################################################
+else()
+    set( KRATOS_FOUR_C_APPLICATION_PYTHON_SOURCES
+        # ${CMAKE_CURRENT_SOURCE_DIR}/custom_python3/add_four_c_model_to_python.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/custom_python3/four_c_python_application.cpp
+    )
 
-## FourC python interface sources
-set(KRATOS_FOUR_C_APPLICATION_PYTHON_INTERFACE
-    # add Python interface compilation units here
-    ${CMAKE_CURRENT_SOURCE_DIR}/custom_python3/four_c_python_application.cpp
-)
+    ## define library Kratos which defines the basic python interface
+    add_library(KratosFourCApplicationCore SHARED ${KRATOS_FOUR_C_APPLICATION_SOURCES})
+    set_target_properties(KratosFourCApplicationCore PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED YES)
+    target_link_libraries(KratosFourCApplicationCore PUBLIC KratosCore
+                                                     PUBLIC 4C::lib4C
+                                                     INTERFACE 4C::four_c_all_enabled_external_dependencies
+    )
+    target_compile_definitions(KratosFourCApplicationCore PUBLIC KRATOS_CORE=IMPORT FOUR_C_APPLICATION=EXPORT)
+    target_include_directories(KratosFourCApplicationCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_library(KratosFourCCore SHARED ${KRATOS_FOUR_C_APPLICATION_CORE} ${KRATOS_FOUR_C_APPLICATION_TESTING_SOURCES})
-target_link_libraries(KratosFourCCore PUBLIC KratosCore)
-set_target_properties(KratosFourCCore PROPERTIES COMPILE_DEFINITIONS "FOUR_C_APPLICATION=EXPORT,API")
+    # pybind11_add_module(KratosFourCApplication MODULE THIN_LTO ${KRATOS_FOUR_C_APPLICATION_PYTHON_SOURCES})
+    # target_link_libraries(KratosFourCApplication PUBLIC KratosFourCApplicationCore)
+    # set_target_properties(KratosFourCApplication PROPERTIES PREFIX "")
+    # install(TARGETS KratosFourCApplication KratosFourCApplicationCore DESTINATION libs )
+    #######################################################################
 
-###############################################################
-## define library Kratos which defines the basic python interface
-pybind11_add_module(KratosFourCApplication MODULE THIN_LTO ${KRATOS_FOUR_C_APPLICATION_PYTHON_INTERFACE})
-target_link_libraries(KratosFourCApplication PRIVATE KratosFourCCore)
-set_target_properties(KratosFourCApplication PROPERTIES PREFIX "")
+    ## changing the .dll suffix to .pyd for Windows compatibility
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        set_target_properties(KratosFourCApplication PROPERTIES SUFFIX .pyd)
+    endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    #######################################################################
 
-# changing the .dll suffix to .pyd (Windows)
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    set_target_properties(KratosFourCApplication PROPERTIES SUFFIX .pyd)
-endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    ## install application's python script if required
+    if(${INSTALL_PYTHON_FILES} MATCHES ON)
+      get_filename_component (CURRENT_DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+      install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python_scripts DESTINATION applications/${CURRENT_DIR_NAME}  FILES_MATCHING PATTERN "*.py"  PATTERN ".svn" EXCLUDE)
+    endif(${INSTALL_PYTHON_FILES} MATCHES ON)
+    #######################################################################
 
-# changing the .dylib suffix to .so (OS X)
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set_target_properties(KratosFourCApplication PROPERTIES SUFFIX .so)
-endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-
-# # Cotire
-# if(USE_COTIRE MATCHES ON)
-#     cotire(KratosFourCCore)
-#     cotire(KratosFourCApplication)
-# endif(USE_COTIRE MATCHES ON)
-
-# Add to the KratosMultiphisics Python module
-kratos_python_install(${INSTALL_PYTHON_USING_LINKS} ${CMAKE_CURRENT_SOURCE_DIR}/FourCApplication3.py KratosMultiphysics/FourCApplication/__init__.py )
-
-# Install python files
-kratos_python_install_directory(${INSTALL_PYTHON_USING_LINKS} ${CMAKE_CURRENT_SOURCE_DIR}/python_scripts3 KratosMultiphysics/FourCApplication )
-
-# Kratos Testing. Install everything except sources to ensure that reference and configuration files are copied.
-if(${INSTALL_TESTING_FILES} MATCHES ON )
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests_python3 DESTINATION applications/FourCApplication
-        PATTERN "*.git" EXCLUDE
-        PATTERN "*.c" EXCLUDE
-        PATTERN "*.h" EXCLUDE
-        PATTERN "*.cpp" EXCLUDE
-        PATTERN "*.hpp" EXCLUDE
-  )
-endif(${INSTALL_TESTING_FILES} MATCHES ON)
-
-# Install targets
-install(TARGETS KratosFourCCore DESTINATION libs )
-install(TARGETS KratosFourCApplication DESTINATION libs )
+    ## Add to the KratosMultiphysics Python module
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/FourCApplication.py" DESTINATION KratosMultiphysics )
+    #######################################################################
+endif()

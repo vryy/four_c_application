@@ -1,12 +1,3 @@
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-######### add include directory here
-if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Android")
-    include_directories( ${CMAKE_SOURCE_DIR}/kratos )
-    include_directories( ${CMAKE_SOURCE_DIR}/applications )
-endif()
-#######################################################################
-
 #find version of git and throw
 execute_process(COMMAND git log --pretty=format:'%h' -n 1
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -80,6 +71,8 @@ else()
     message(FATAL_ERROR "4C prefix path is not defined")
 endif()
 
+# message("CMAKE_PREFIX_PATH: " ${CMAKE_PREFIX_PATH})
+
 find_package(4C CONFIG REQUIRED NO_DEFAULT_PATH)
 
 #######################################################################
@@ -101,22 +94,25 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Android")
     set_target_properties(KratosFourCApplication PROPERTIES PREFIX "")
     #######################################################################
 else()
-    set( KRATOS_FOUR_C_APPLICATION_SOURCES
-        ${KRATOS_FOUR_C_APPLICATION_SOURCES}
+    set( KRATOS_FOUR_C_APPLICATION_PYTHON_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/custom_python/add_four_c_model_to_python.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/custom_python/four_c_python_application.cpp
     )
 
     ## define library Kratos which defines the basic python interface
-    add_library(KratosFourCApplication SHARED ${KRATOS_FOUR_C_APPLICATION_SOURCES})
-    set_target_properties(KratosFourCApplication PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED YES)
-    target_link_libraries(KratosFourCApplication PUBLIC KratosCore
-                                                 PRIVATE 4C::lib4C
-                                                 INTERFACE 4C::four_c_all_enabled_external_dependencies
+    add_library(KratosFourCApplicationCore SHARED ${KRATOS_FOUR_C_APPLICATION_SOURCES})
+    set_target_properties(KratosFourCApplicationCore PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED YES)
+    target_link_libraries(KratosFourCApplicationCore PUBLIC KratosCore
+                                                     PUBLIC 4C::lib4C
+                                                     INTERFACE 4C::four_c_all_enabled_external_dependencies
     )
-    set_target_properties(KratosFourCApplication PROPERTIES COMPILE_DEFINITIONS "KRATOS_CORE=IMPORT;FOUR_C_APPLICATION=EXPORT;")
+    target_compile_definitions(KratosFourCApplicationCore PUBLIC KRATOS_CORE=IMPORT FOUR_C_APPLICATION=EXPORT)
+    target_include_directories(KratosFourCApplicationCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+    add_library(KratosFourCApplication SHARED ${KRATOS_FOUR_C_APPLICATION_PYTHON_SOURCES})
+    target_link_libraries(KratosFourCApplication PUBLIC KratosFourCApplicationCore)
     set_target_properties(KratosFourCApplication PROPERTIES PREFIX "")
-    install(TARGETS KratosFourCApplication DESTINATION libs )
+    install(TARGETS KratosFourCApplication KratosFourCApplicationCore DESTINATION libs )
     #######################################################################
 
     ## changing the .dll suffix to .pyd for Windows compatibility

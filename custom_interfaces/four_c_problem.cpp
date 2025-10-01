@@ -72,10 +72,9 @@ FourCProblem::FourCProblem(int argc, char** argv)
     /** The maintainer is responsible for keeping track of possible changes **/
     /*************************************************************************/
     // MPI_Init(&argc, &argv); // this is called outside by Kratos
-    Kokkos::ScopeGuard kokkos_guard(argc, argv); // DO NOT KNOW WHAT IS THIS
 
     std::shared_ptr<FourC::Core::Communication::Communicators> communicators =
-        FourC::Core::Communication::create_comm(std::vector<std::string>(argv, argv + argc));
+        std::make_shared<FourC::Core::Communication::Communicators>(FourC::Core::Communication::create_comm(std::vector<std::string>(argv, argv + argc)));
 
     mArguments.input_file_name = "";
     mArguments.output_file_identifier = "";
@@ -100,6 +99,7 @@ FourCProblem::FourCProblem(int argc, char** argv)
         char go = ' ';
         if (scanf("%c", &go) == EOF)
         {
+          using namespace FourC;
           FOUR_C_THROW("Error while reading input.\n");
         }
       }
@@ -191,6 +191,7 @@ FourCProblem::FourCProblem(int argc, char** argv)
 
 FourCProblem::~FourCProblem()
 {
+    // FourC::Core::Utils::SingletonOwnerRegistry::finalize();
     // FourC::Global::Problem::done();
     // MPI_Finalize(); // this is called outside by Kratos
 }
@@ -251,7 +252,7 @@ void FourCProblem::setup_global_problem(FourC::Core::IO::InputFile& input_file, 
     /*************************************************************************/
     using namespace FourC;
     mpProblem->set_restart_step(arguments.restart_step);
-    mpProblem->set_communicators(arguments.comms);
+    mpProblem->set_communicators(*arguments.comms);
     Global::read_parameter(*mpProblem, input_file);
 
     setup_parallel_output(arguments);
@@ -298,7 +299,7 @@ void FourCProblem::setup_global_problem(FourC::Core::IO::InputFile& input_file, 
     /*******************************************************************/
     /**************** interface part: create the model *****************/
     /*******************************************************************/
-    MPI_Comm gcomm = mpProblem->get_communicators()->global_comm();
+    MPI_Comm gcomm = mpProblem->get_communicators().global_comm();
     mpModel = FourCModel::Pointer(new FourCModel(gcomm, mpProblem->n_dim()));
 
     // add the discretization
