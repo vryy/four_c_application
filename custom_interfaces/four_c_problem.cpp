@@ -294,7 +294,7 @@ void FourCProblem::setup_global_problem(FourC::Core::IO::InputFile& input_file, 
     // and add it to the (derived) nurbs discretization
     Global::read_knots(*mpProblem, input_file);
 
-    Global::read_fields(*mpProblem, input_file);
+    Global::read_fields(*mpProblem, input_file, *mesh_reader);
 
     /*******************************************************************/
     /**************** interface part: create the model *****************/
