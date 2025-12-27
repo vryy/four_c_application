@@ -89,9 +89,9 @@ void FourCModel::FillComplete()
         it->second.mat1 = std::make_shared<FourC::Core::LinAlg::SparseMatrix>(*it->second.disc->dof_row_map(), 81, true, true);
         it->second.mat2 = std::make_shared<FourC::Core::LinAlg::SparseMatrix>(*it->second.disc->dof_row_map(), 81, true, true);
 
-        it->second.vec1 = FourC::Core::LinAlg::create_vector(*it->second.disc->dof_row_map(), true);
-        it->second.vec2 = FourC::Core::LinAlg::create_vector(*it->second.disc->dof_row_map(), true);
-        it->second.vec3 = FourC::Core::LinAlg::create_vector(*it->second.disc->dof_row_map(), true);
+        it->second.vec1 = std::make_shared<FourC::Core::LinAlg::Vector<double>>(*it->second.disc->dof_row_map(), true);
+        it->second.vec2 = std::make_shared<FourC::Core::LinAlg::Vector<double>>(*it->second.disc->dof_row_map(), true);
+        it->second.vec3 = std::make_shared<FourC::Core::LinAlg::Vector<double>>(*it->second.disc->dof_row_map(), true);
     }
 }
 
@@ -99,7 +99,7 @@ void FourCModel::SetZeroState(const std::string& dis_name, const unsigned nds,
         const std::string& state_name)
 {
     auto pdisc = GetDiscretizationData(dis_name).disc;
-    auto zero_state = FourC::Core::LinAlg::create_vector(*pdisc->dof_row_map(), true);
+    auto zero_state = std::make_shared<FourC::Core::LinAlg::Vector<double>>(*pdisc->dof_row_map(), true);
     pdisc->set_state(nds, state_name, *zero_state);
 }
 

@@ -55,7 +55,6 @@ LICENSE: see four_c_application/LICENSE.txt
 #include "4C_tsi_dyn.hpp"
 #include "4C_utils_enum.hpp"
 
-#include <Kokkos_Core.hpp>
 
 // Project includes
 #include "four_c_problem.h"
