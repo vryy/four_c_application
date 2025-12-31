@@ -263,11 +263,12 @@ void FourCProblem::setup_global_problem(FourC::Core::IO::InputFile& input_file, 
     // input of materials
     Global::read_materials(*mpProblem, input_file);
 
-    // input of materials
+    // input for multi-scale rough-surface contact
     Global::read_contact_constitutive_laws(*mpProblem, input_file);
 
     // input of materials of cloned fields (if needed)
     Global::read_cloning_material_map(*mpProblem, input_file);
+
     {
         Core::Utils::FunctionManager function_manager;
         global_legacy_module_callbacks().AttachFunctionDefinitions(function_manager);
