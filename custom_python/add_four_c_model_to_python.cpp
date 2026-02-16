@@ -54,18 +54,21 @@ void FourCModel_CreateElement(FourCModel& rDummy, const std::string& dis_name, c
 
 static FourCProblem::Pointer FourCProblem_init(const boost::python::list& arguments)
 {
-    int argc = 0;
     std::vector<std::string> args;
-    std::vector<char*> argv;
 
+    args.push_back(""); // this is for the first argument ("4C") as CLI requires it
     typedef boost::python::stl_input_iterator<std::string> iterator_value_type;
     BOOST_FOREACH(const iterator_value_type::value_type& str,
         std::make_pair(iterator_value_type(arguments), iterator_value_type() ) )
     {
-        ++argc;
         args.push_back(str);
-        argv.push_back(const_cast<char*>(args.back().c_str()));
     }
+
+    int argc = args.size();
+
+    std::vector<char*> argv;
+    for (int i = 0; i < argc; ++i)
+        argv.push_back(const_cast<char*>(args[i].c_str()));
 
     return FourCProblem::Pointer(new FourCProblem(argc, argv.data()));
 }

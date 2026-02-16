@@ -13,6 +13,7 @@ LICENSE: see four_c_application/LICENSE.txt
 #define KRATOS_FOUR_C_PROBLEM_H_INCLUDED
 
 // System includes
+#include <filesystem>
 
 // External includes
 #include "4C_comm_utils.hpp"
@@ -58,17 +59,25 @@ public:
     typedef int IndexType;
 
     /**
-     * Gather some arguments from the command line and store them in a struct. This should be
-     * changed to a proper parser
+     * Structure to hold command line arguments.
      */
     struct CommandlineArguments
     {
-      std::string input_file_name;
-      std::string output_file_identifier;
-      std::string restart_file_identifier;
-      int restart_step = 0;
-
-      std::shared_ptr<FourC::Core::Communication::Communicators> comms;
+      bool help = false;
+      int n_groups = 1;
+      bool parameters = false;
+      std::vector<int> group_layout = {};
+      FourC::Core::Communication::NestedParallelismType nptype =
+          FourC::Core::Communication::NestedParallelismType::no_nested_parallelism;
+      int diffgroup = -1;
+      int restart = 0;
+      std::string restart_file_identifier = "";
+      std::vector<int> restart_per_group = {};
+      std::vector<std::string> restart_identifier_per_group = {};
+      bool interactive = false;
+      std::vector<std::pair<std::filesystem::path, std::string>> io_pairs;
+      std::filesystem::path input_file_name = "";
+      std::string output_file_identifier = "";
     };
 
     ///@}
@@ -172,6 +181,7 @@ private:
     FourC::Global::Problem* mpProblem;
     FourCModel::Pointer mpModel;
     CommandlineArguments mArguments;
+    std::shared_ptr<FourC::Core::Communication::Communicators> mpCommunicators;
 
     ///@}
     ///@name Private Operators
@@ -181,25 +191,21 @@ private:
     ///@name Private Operations
     ///@{
 
-    void setup_parallel_output(const CommandlineArguments& arguments);
+    void setup_parallel_output(const CommandlineArguments& arguments,
+            const FourC::Core::Communication::Communicators& communicators);
 
-    void setup_global_problem(FourC::Core::IO::InputFile& input_file, const CommandlineArguments& arguments);
+    void setup_global_problem(FourC::Core::IO::InputFile& input_file, const CommandlineArguments& arguments,
+            const FourC::Core::Communication::Communicators& communicators);
 
     void entrypoint_switch();
 
-    std::vector<std::string> parse_input_output_files(int argc, char** argv, int my_rank) const;
-
-    void parse_commandline_arguments(int argc, char** argv, CommandlineArguments& arguments) const;
-
-    void parse_restart_definition(const std::vector<std::string>& inout, const int in_out_args,
-            std::string& restart_file_identifier, const std::string& outfile_identifier,
-            const int restart_group, CommandlineArguments& arguments) const;
+    CommandlineArguments parse_command_line(int argc, char** argv) const;
 
     double walltime_in_seconds() const;
 
     void print_help_message() const;
 
-    void run(const CommandlineArguments& arguments);
+    void run(CommandlineArguments& cli_args, const FourC::Core::Communication::Communicators& communicators);
 
     ///@}
     ///@name Private  Access
