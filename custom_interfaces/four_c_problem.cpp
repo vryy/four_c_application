@@ -360,12 +360,13 @@ FourCProblem::FourCProblem(int argc, char** argv)
     // // Initialize our own singleton registry to ensure we clean up all singletons properly.
     // Core::Utils::SingletonOwnerRegistry::ScopeGuard singleton_owner_guard{};
 
-    mArguments = parse_command_line(argc, argv);
+    CommandlineArguments cli_args;
+    cli_args = parse_command_line(argc, argv);
 
     Core::Communication::CommConfig config{
-        .group_layout = mArguments.group_layout,
-        .np_type = mArguments.nptype,
-        .diffgroup = mArguments.diffgroup,
+        .group_layout = cli_args.group_layout,
+        .np_type = cli_args.nptype,
+        .diffgroup = cli_args.diffgroup,
     };
     mpCommunicators = std::make_shared<Core::Communication::Communicators>(Core::Communication::create_comm(config));
 
@@ -373,7 +374,7 @@ FourCProblem::FourCProblem(int argc, char** argv)
     mpProblem = Global::Problem::instance();
     ///
 
-    if (mArguments.interactive)
+    if (cli_args.interactive)
     {
       char hostname[256];
       gethostname(hostname, sizeof(hostname));
@@ -393,7 +394,7 @@ FourCProblem::FourCProblem(int argc, char** argv)
 
     Core::Communication::barrier(mpCommunicators->global_comm());
 
-    if (mArguments.parameters)
+    if (cli_args.parameters)
     {
       if (Core::Communication::my_mpi_rank(mpCommunicators->local_comm()) == 0)
       {
@@ -445,12 +446,43 @@ FourCProblem::FourCProblem(int argc, char** argv)
                   << Core::Communication::num_mpi_ranks(mpCommunicators->global_comm()) << '\n';
       }
     }
+
+    /************************* 4C setup part *********************************/
+    /** This function is adapted from                                       **/
+    /**   4C/apps/global_full/4C_global_full_main.cpp                       **/
+    /** The maintainer is responsible for keeping track of possible changes **/
+    /*************************************************************************/
+
+    auto& communicators = *mpCommunicators;
+
+    update_io_identifiers(cli_args, communicators.group_id());
+
+  /* input phase, input of all information */
+    global_legacy_module_callbacks().RegisterParObjectTypes();
+    double t0 = walltime_in_seconds();
+
+    // and now the actual reading
+    Core::IO::InputFile input_file = Global::set_up_input_file(communicators.local_comm());
+    input_file.read(cli_args.input_file_name);
+    setup_global_problem(input_file, cli_args, communicators);
+
+    // we wait till all procs are here. Otherwise a hang up might occur where
+    // one proc ended with FOUR_C_THROW but other procs were not finished and waited...
+    // we also want to have the printing above being finished.
+    Core::Communication::barrier(communicators.local_comm());
+
+    const double ti = walltime_in_seconds() - t0;
+    if (Core::Communication::my_mpi_rank(communicators.global_comm()) == 0)
+    {
+      Core::IO::cout << "\nTotal wall time for INPUT:       " << std::setw(10) << std::setprecision(3)
+                     << std::scientific << ti << " sec \n\n";
+    }
 }
 
 FourCProblem::~FourCProblem()
 {
-  if (mpCommunicators != nullptr)
-    mpCommunicators->finalize();
+    if (mpCommunicators != nullptr)
+      mpCommunicators->finalize();
     // FourC::Core::Utils::SingletonOwnerRegistry::finalize();
     // FourC::Global::Problem::done();
     // MPI_Finalize(); // this is called outside by Kratos
@@ -478,7 +510,7 @@ void FourCProblem::Run()
 {
     try
     {
-        run(mArguments, *mpCommunicators);
+        run(*mpCommunicators);
     }
     catch (FourC::Core::Exception& err)
     {
@@ -590,40 +622,12 @@ void FourCProblem::setup_parallel_output(const CommandlineArguments& arguments,
         oproc, communicators.group_id(), arguments.output_file_identifier);
 }
 
-void FourCProblem::run(CommandlineArguments& cli_args, const FourC::Core::Communication::Communicators& communicators)
+void FourCProblem::run(const FourC::Core::Communication::Communicators& communicators)
 {
-    /************************* 4C setup part *********************************/
-    /** This function is adapted from                                       **/
-    /**   4C/apps/global_full/4C_global_full_main.cpp                       **/
-    /** The maintainer is responsible for keeping track of possible changes **/
-    /*************************************************************************/
-    using namespace FourC;
-
-    update_io_identifiers(cli_args, communicators.group_id());
-
-  /* input phase, input of all information */
-    global_legacy_module_callbacks().RegisterParObjectTypes();
-    double t0 = walltime_in_seconds();
-
-    // and now the actual reading
-    Core::IO::InputFile input_file = Global::set_up_input_file(communicators.local_comm());
-    input_file.read(cli_args.input_file_name);
-    setup_global_problem(input_file, cli_args, communicators);
-
-    // we wait till all procs are here. Otherwise a hang up might occur where
-    // one proc ended with FOUR_C_THROW but other procs were not finished and waited...
-    // we also want to have the printing above being finished.
-    Core::Communication::barrier(communicators.local_comm());
-
-    const double ti = walltime_in_seconds() - t0;
-    if (Core::Communication::my_mpi_rank(communicators.global_comm()) == 0)
-    {
-      Core::IO::cout << "\nTotal wall time for INPUT:       " << std::setw(10) << std::setprecision(3)
-                     << std::scientific << ti << " sec \n\n";
-    }
+   using namespace FourC;
 
     /*--------------------------------------------------calculation phase */
-    t0 = walltime_in_seconds();
+    double t0 = walltime_in_seconds();
 
     entrypoint_switch();
 

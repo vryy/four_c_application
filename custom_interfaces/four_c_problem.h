@@ -179,7 +179,6 @@ private:
 
     FourC::Global::Problem* mpProblem;
     FourCModel::Pointer mpModel;
-    CommandlineArguments mArguments;
     std::shared_ptr<FourC::Core::Communication::Communicators> mpCommunicators;
 
     ///@}
@@ -204,7 +203,7 @@ private:
 
     void print_help_message() const;
 
-    void run(CommandlineArguments& cli_args, const FourC::Core::Communication::Communicators& communicators);
+    void run(const FourC::Core::Communication::Communicators& communicators);
 
     ///@}
     ///@name Private  Access
