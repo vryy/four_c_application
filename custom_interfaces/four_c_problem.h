@@ -106,9 +106,17 @@ public:
 
     std::vector<std::string> GetDiscretizationNames() const;
 
-    FourCModel::ConstPointer pGetModel() const {return mpModel;}
+    FourCModel::ConstPointer pGetModel() const
+    {
+        assert(mpModel != nullptr);
+        return mpModel;
+    }
 
-    FourCModel::Pointer pGetModel() {return mpModel;}
+    FourCModel::Pointer pGetModel()
+    {
+        assert(mpModel != nullptr);
+        return mpModel;
+    }
 
     ///@}
     ///@name Inquiry
