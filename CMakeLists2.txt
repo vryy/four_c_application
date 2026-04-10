@@ -101,7 +101,6 @@ else()
 
     ## define library Kratos which defines the basic python interface
     add_library(KratosFourCApplicationCore SHARED ${KRATOS_FOUR_C_APPLICATION_SOURCES})
-    set_target_properties(KratosFourCApplicationCore PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED YES)
     target_link_libraries(KratosFourCApplicationCore PUBLIC KratosCore
                                                      PUBLIC 4C::lib4C
                                                      INTERFACE 4C::four_c_all_enabled_external_dependencies
