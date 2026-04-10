@@ -129,6 +129,14 @@ public:
         return GetDiscretizationData(dis_name).disc;
     }
 
+    /// Access the discretization data
+    disc_data_t GetDiscretizationData(const std::string& dis_name) const
+    {
+        if (mDiscretizationData.find(dis_name) == mDiscretizationData.end())
+            KRATOS_ERROR << "4C Discretization " << dis_name << " does not exist";
+        return mDiscretizationData.at(dis_name);
+    }
+
     ///@}
     ///@name Inquiry
     ///@{
@@ -189,14 +197,6 @@ protected:
     std::shared_ptr<FourC::Core::FE::Discretization> pGetDiscretization(const std::string& dis_name)
     {
         return GetDiscretizationData(dis_name).disc;
-    }
-
-    /// Access the discretization
-    const disc_data_t GetDiscretizationData(const std::string& dis_name) const
-    {
-        if (mDiscretizationData.find(dis_name) == mDiscretizationData.end())
-            KRATOS_ERROR << "4C Discretization " << dis_name << " does not exist";
-        return mDiscretizationData.at(dis_name);
     }
 
     /// Access the discretization (protected)

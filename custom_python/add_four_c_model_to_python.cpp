@@ -88,6 +88,17 @@ void FourCApplication_AddFourCModelToPython()
     namespace bp = boost::python;
 
     void(FourCModel::*pointer_to_Evaluate)(Teuchos::ParameterList&, const std::string&) = &FourCModel::Evaluate;
+    FourCModel::disc_data_t(FourCModel::*pointer_to_GetDiscretizationData)(const std::string&) const = &FourCModel::GetDiscretizationData;
+
+    bp::class_<FourCModel::disc_data_t>
+    ("FourCDiscData", bp::no_init)
+    .def_readonly("disc", &FourCModel::disc_data_t::disc)
+    .def_readonly("mat1", &FourCModel::disc_data_t::mat1)
+    .def_readonly("mat2", &FourCModel::disc_data_t::mat2)
+    .def_readonly("vec1", &FourCModel::disc_data_t::vec1)
+    .def_readonly("vec2", &FourCModel::disc_data_t::vec2)
+    .def_readonly("vec3", &FourCModel::disc_data_t::vec3)
+    ;
 
     bp::class_<FourCModel, FourCModel::Pointer, boost::noncopyable>
     ("FourCModel", bp::no_init)
@@ -98,6 +109,7 @@ void FourCApplication_AddFourCModelToPython()
     .def("FillComplete", &FourCModel::FillComplete)
     .def("SetZeroState", &FourCModel::SetZeroState)
     .def("Evaluate", pointer_to_Evaluate)
+    .def("GetDiscretizationData", pointer_to_GetDiscretizationData)
     .def(bp::self_ns::str(bp::self))
     ;
 
