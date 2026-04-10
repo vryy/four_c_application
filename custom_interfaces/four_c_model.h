@@ -2,10 +2,9 @@
 LICENSE: see four_c_application/LICENSE.txt
 */
 //
-//   Project Name:        Kratos
+//   Project Name:        KratosFourCApplication
 //   Last Modified by:    $Author: hbui $
 //   Date:                $Date: 25/09/2024 $
-//   Revision:            $Revision: 1.0 $
 //
 //
 
@@ -63,9 +62,9 @@ public:
 
         std::shared_ptr<FourC::Core::LinAlg::SparseOperator> mat1;
         std::shared_ptr<FourC::Core::LinAlg::SparseOperator> mat2;
-        std::shared_ptr<FourC::Core::LinAlg::Vector<double> > vec1;
-        std::shared_ptr<FourC::Core::LinAlg::Vector<double> > vec2;
-        std::shared_ptr<FourC::Core::LinAlg::Vector<double> > vec3;
+        std::shared_ptr<FourC::Core::LinAlg::Vector<double>> vec1;
+        std::shared_ptr<FourC::Core::LinAlg::Vector<double>> vec2;
+        std::shared_ptr<FourC::Core::LinAlg::Vector<double>> vec3;
     };
 
     ///@}

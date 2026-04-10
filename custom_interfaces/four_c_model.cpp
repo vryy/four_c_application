@@ -2,10 +2,9 @@
 LICENSE: see four_c_application/LICENSE.txt
 */
 //
-//   Project Name:        Kratos
+//   Project Name:        KratosFourCApplication
 //   Last Modified by:    $Author: hbui $
 //   Date:                $Date: 25/09/2024 $
-//   Revision:            $Revision: 1.0 $
 //
 //
 
@@ -29,7 +28,9 @@ FourCModel::FourCModel(const MPI_Comm& comm, const int dim)
 {}
 
 FourCModel::~FourCModel()
-{}
+{
+    std::cout << "FourCModel is unloaded" << std::endl;
+}
 
 void FourCModel::CreateDiscretization(const std::string& name)
 {

@@ -2,10 +2,9 @@
 LICENSE: see four_c_application/LICENSE.txt
 */
 //
-//   Project Name:        Kratos
+//   Project Name:        KratosFourCApplication
 //   Last modified by:    $Author: hbui $
 //   Date:                $Date: 25/09/2024 $
-//   Revision:            $Revision: 1.0 $
 //
 //
 
