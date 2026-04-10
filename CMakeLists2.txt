@@ -95,6 +95,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Android")
     #######################################################################
 else()
     set( KRATOS_FOUR_C_APPLICATION_PYTHON_SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/custom_python/add_four_c_classes_to_python.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/custom_python/add_four_c_model_to_python.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/custom_python/four_c_python_application.cpp
     )
