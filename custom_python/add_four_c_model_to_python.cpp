@@ -13,13 +13,12 @@ LICENSE: see four_c_application/LICENSE.txt
 
 
 // External includes
-#include <boost/foreach.hpp>
 #include <boost/python.hpp>
-#include <boost/python/stl_iterator.hpp>
 
 
 // Project includes
 #include "mpi_python/mpi_python.h"
+#include "python/python_utils.h"
 #include "custom_python/add_four_c_model_to_python.h"
 #include "custom_interfaces/four_c_model.h"
 #include "custom_interfaces/four_c_problem.h"
@@ -40,12 +39,7 @@ void FourCModel_CreateElement(FourCModel& rDummy, const std::string& dis_name, c
 {
     typedef FourCModel::IndexType IndexType;
     std::vector<IndexType> nodes;
-    typedef boost::python::stl_input_iterator<int> iterator_value_type;
-    BOOST_FOREACH(const iterator_value_type::value_type& i,
-        std::make_pair(iterator_value_type(list_nodes), iterator_value_type() ) )
-    {
-        nodes.push_back(i);
-    }
+    PythonUtils::Unpack<IndexType>(list_nodes, nodes);
     rDummy.CreateElement(dis_name, element_type, id, nodes);
 }
 
@@ -54,14 +48,8 @@ void FourCModel_CreateElement(FourCModel& rDummy, const std::string& dis_name, c
 static FourCProblem::Pointer FourCProblem_init(const boost::python::list& arguments)
 {
     std::vector<std::string> args;
-
     args.push_back(""); // this is for the first argument ("4C") as CLI requires it
-    typedef boost::python::stl_input_iterator<std::string> iterator_value_type;
-    BOOST_FOREACH(const iterator_value_type::value_type& str,
-        std::make_pair(iterator_value_type(arguments), iterator_value_type() ) )
-    {
-        args.push_back(str);
-    }
+    PythonUtils::UnpackAndAppend<std::string>(arguments, args);
 
     int argc = args.size();
 
