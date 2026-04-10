@@ -60,9 +60,13 @@ void FourCModel::CreateElement(const std::string& dis_name, const std::string& e
         KRATOS_ERROR << "Discretization " << dis_name << " has been filled. No element can be added.";
 
     std::shared_ptr<FourC::Core::Elements::Element> p_element;
-    if (element_type == "SOLID")
+    if (element_type == "SOLID2")
     {
-        p_element = std::make_shared<FourC::Discret::Elements::Solid>(id, rank);
+        p_element = std::make_shared<FourC::Discret::Elements::Solid<2>>(id, rank);
+    }
+    else if (element_type == "SOLID3")
+    {
+        p_element = std::make_shared<FourC::Discret::Elements::Solid<3>>(id, rank);
     }
     else
         KRATOS_ERROR << "Element type " << element_type << " is not supported";
