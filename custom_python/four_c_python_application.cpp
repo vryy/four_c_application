@@ -18,6 +18,7 @@ LICENSE: see four_c_application/LICENSE.txt
 #include "includes/define.h"
 #include "four_c_application.h"
 #include "four_c_application_variables.h"
+#include "custom_python/add_four_c_classes_to_python.h"
 #include "custom_python/add_four_c_model_to_python.h"
 
 namespace Kratos
@@ -37,6 +38,7 @@ BOOST_PYTHON_MODULE(KratosFourCApplication)
     // KRATOS_REGISTER_IN_PYTHON_3D_VARIABLE_WITH_COMPONENTS( VARIABLE_NAME ) // Example registering 3D varibles to python
 
     FourCApplication_AddFourCModelToPython();
+    FourCApplication_AddFourCClassesToPython();
 }
 
 } // namespace Python.
