@@ -43,6 +43,7 @@ LICENSE: see four_c_application/LICENSE.txt
 #include "4C_porofluid_pressure_based_elast_dyn.hpp"
 #include "4C_porofluid_pressure_based_elast_scatra_dyn.hpp"
 #include "4C_red_airways_dyn_drt.hpp"
+#include "4C_reduced_lung_1d_pipe_flow_main.hpp"
 #include "4C_reduced_lung_main.hpp"
 #include "4C_scatra_cardiac_monodomain_dyn.hpp"
 #include "4C_scatra_dyn.hpp"
@@ -654,7 +655,8 @@ void FourCProblem::entrypoint_switch()
     int restart = mpProblem->restart();
 
     // choose the entry-routine depending on the problem type
-    switch (mpProblem->get_problem_type())
+    auto& problem = *mpProblem;
+    switch (problem.get_problem_type())
     {
         case Core::ProblemType::structure:
         case Core::ProblemType::polymernetwork:
@@ -680,22 +682,22 @@ void FourCProblem::entrypoint_switch()
           sti_dyn(restart);
           break;
         case Core::ProblemType::fluid_xfem:
-          fluid_xfem_drt();
+          fluid_xfem_drt(problem);
           break;
           break;
         case Core::ProblemType::fluid_ale:
-          fluid_ale_drt();
+          fluid_ale_drt(problem);
           break;
 
         case Core::ProblemType::fsi:
         case Core::ProblemType::fsi_redmodels:
-          fsi_ale_drt();
+          fsi_ale_drt(problem);
           break;
         case Core::ProblemType::fsi_xfem:
-          xfsi_drt();
+          xfsi_drt(problem);
           break;
         case Core::ProblemType::fpsi_xfem:
-          xfpsi_drt();
+          xfpsi_drt(problem);
           break;
         case Core::ProblemType::gas_fsi:
         case Core::ProblemType::biofilm_fsi:
@@ -704,7 +706,7 @@ void FourCProblem::entrypoint_switch()
           fs3i_dyn();
           break;
         case Core::ProblemType::fbi:
-          fsi_immersed_drt();
+          fsi_immersed_drt(problem);
           break;
 
         case Core::ProblemType::ale:
@@ -737,6 +739,10 @@ void FourCProblem::entrypoint_switch()
 
         case Core::ProblemType::reduced_lung:
           ReducedLung::reduced_lung_main();
+          break;
+
+        case Core::ProblemType::one_d_pipe_flow:
+          ReducedLung1dPipeFlow::main();
           break;
 
         case Core::ProblemType::poroelast:

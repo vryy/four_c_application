@@ -13,7 +13,7 @@ LICENSE: see four_c_application/LICENSE.txt
 // External includes
 #include "4C_fem_general_node.hpp"
 #include "4C_fem_general_element.hpp"
-#include "4C_solid_3D_ele.hpp"
+#include "4C_solid_ele.hpp"
 #include "4C_linalg_utils_sparse_algebra_create.hpp"
 
 // Project includes
