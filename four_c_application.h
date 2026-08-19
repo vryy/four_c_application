@@ -77,7 +77,6 @@ public:
     ///@name Type Definitions
     ///@{
 
-    /// Pointer definition of KratosMultiphaseApplication
     KRATOS_CLASS_POINTER_DEFINITION(KratosFourCApplication);
 
     ///@}
@@ -115,7 +114,7 @@ public:
     /// Turn back information as a string.
     std::string Info() const override
     {
-        return "Description of your application";
+        return "Application interface for 4C Multiphysics";
     }
 
     /// Print information about this object.

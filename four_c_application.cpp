@@ -99,11 +99,7 @@ namespace Kratos
 {
 
 KratosFourCApplication::KratosFourCApplication()
-#ifdef SD_APP_FORWARD_COMPATIBILITY
     : KratosApplication("FourCApplication")
-#else
-    : KratosApplication()
-#endif
       // , FOUR_C_APP_CREATE_ELEMENT_ALL_GEOMETRIES( ElementType ) // Example creating elements for all geometries
       // , FOUR_C_APP_CREATE_CONDITION_ALL_GEOMETRIES( ConditionType ) // Example creating conditions for all geometries
 {
